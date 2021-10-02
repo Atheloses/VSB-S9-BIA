@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator
 import numpy as np
-from mpl_toolkits import mplot3d
 import random
+import math
 
 class Plotting:
     def plot(self, generations):
@@ -51,7 +51,7 @@ class Solution:
         Plotting().plot(self.generations)
 
     def hill_climbing(self):
-        sigma = (max(self.uB)-min(self.lB))/5
+        sigma = (min(self.uB)-max(self.lB))/5
 
         for dim in range(self.dims):
             self.params[dim] = random.uniform(self.lB[dim], self.uB[dim])
