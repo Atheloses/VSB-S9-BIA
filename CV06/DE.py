@@ -11,42 +11,85 @@ import time
 from numpy.lib.function_base import append
 
 class Plotting:
-    def __init__(self,lB,uB):
+    def __init__(self, lB, uB, fitness):
         self.lB = lB
         self.uB = uB
-        self.figure = 0
         plt.ion()
+        self.figure = 0
+        self.fitness = fitness
+
+    def initHeatMap(self, title):
+        self.title = title
+        self.X, self.Y = np.meshgrid(np.linspace(self.lB[0], self.uB[0], 100), np.linspace(self.lB[1], self.uB[1], 100))
+        self.Z = self.fitness([self.X,self.Y])
+        self.z_min, self.z_max = self.Z.min(), self.Z.max()
+
         self.fig, self.ax = plt.subplots()
 
-    def plot(self, generations, lB, uB, fitness):
-        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        self.ax.set_title(self.title)
+        c = self.ax.pcolormesh(self.X, self.Y, self.Z, vmin=self.z_min, vmax=self.z_max)
+        self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
+        self.fig.colorbar(c, ax=self.ax)
+        
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+    def init3D(self):
+        self.fig, self.ax = plt.subplots(subplot_kw={"projection": "3d"})
+        self.ax.zaxis.set_major_locator(LinearLocator(10))
+        # A StrMethodFormatter is used automatically
+        self.ax.zaxis.set_major_formatter('{x:.02f}')
 
         # Make data.
-        X = np.arange(lB[0], uB[0], (uB[0]-lB[0])/50)
-        Y = np.arange(lB[1], uB[1], (uB[1]-lB[1])/50)
-        X, Y = np.meshgrid(X, Y)
+        X = np.arange(self.lB[0], self.uB[0], (self.uB[0]-self.lB[0])/50)
+        Y = np.arange(self.lB[1], self.uB[1], (self.uB[1]-self.lB[1])/50)
+        self.X, self.Y = np.meshgrid(X, Y)
         #R = np.sqrt(X**2 + Y**2)
         #Z = np.sin(R)
-        Z = fitness([X,Y])
+        self.Z = self.fitness([self.X,self.Y])
 
         # Plot the surface.
-        surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False, alpha=0.5)
+        surf = self.ax.plot_surface(self.X, self.Y, self.Z, cmap=cm.coolwarm, linewidth=0, antialiased=False, alpha=0.5)
+        # Add a color bar which maps values to colors.
+        self.fig.colorbar(surf, shrink=0.5, aspect=5)
+        minZ = np.min(self.Z)
+        maxZ = np.max(self.Z)
+        # Customize the z axis.
+        self.ax.set_zlim(minZ, maxZ)
+
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+    def plot3D(self, generations, name):
+        self.ax.clear()
+        self.fig.canvas.set_window_title(name)
+        self.ax.plot_surface(self.X, self.Y, self.Z, cmap=cm.coolwarm, linewidth=0, antialiased=False, alpha=0.5)
 
         for generation in generations:
             for jedinec in generation:
-                ax.scatter(jedinec[0], jedinec[1], jedinec[2], marker='o')
-        minZ = np.min(Z)
-        maxZ = np.max(Z)
-        # Customize the z axis.
-        ax.set_zlim(minZ, maxZ)
-        ax.zaxis.set_major_locator(LinearLocator(10))
-        # A StrMethodFormatter is used automatically
-        ax.zaxis.set_major_formatter('{x:.02f}')
+                self.ax.scatter(jedinec[0], jedinec[1], jedinec[2], marker='o')
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
 
-        # Add a color bar which maps values to colors.
-        fig.colorbar(surf, shrink=0.5, aspect=5)
+    def plotHeatMap(self, generations, name, end=False):
+        if(end):
+            plt.ioff()
 
-        plt.show()
+        self.ax.clear()
+        self.fig.canvas.set_window_title(name)        
+        self.ax.set_title(self.title)
+        c = self.ax.pcolormesh(self.X, self.Y, self.Z,  vmin=self.z_min, vmax=self.z_max)
+        self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
+
+        for generation in generations:
+            for jedinec in generation:
+                self.ax.scatter(jedinec[0], jedinec[1], marker='o')
+
+        if(end):
+            plt.show()
+        else:
+            self.fig.canvas.draw()
+            self.fig.canvas.flush_events()
 
     def plot2D(self, cities, name):
         verts = []
@@ -104,9 +147,6 @@ class Solution:
         self.generations = []
         self.maximize = maximize
 
-    def plot(self):
-        Plotting().plot(self.generations, self.lB, self.uB, self.fitness)
-
     def hill_climbing(self):
         sigma = (min(self.uB)-max(self.lB))/5
         numberOfGens = 100
@@ -134,9 +174,12 @@ class Solution:
                 self.generations.append([np.append(self.params,lastFitness),])
 
         print("Final: " + str(self.params) + ", fitness: " + str(self.fitness(self.params)))
-        self.plot()
+
+        plot = Plotting(self.lB, self.uB, False, self.fitness)
+        plot.plot(self.generations)
 
     def evolution(self):
+        plot = Plotting(self.lB, self.uB, False, self.fitness)
         params = []
         sigma = 0.5
         numberOfGens = 100
@@ -178,7 +221,8 @@ class Solution:
         for jedinec in range(populationSize):
             print("Final: " + str(params[jedinec]) + ", fitness: " + str(lastFitness[jedinec]))
             self.generations.append([np.append(params[jedinec],lastFitness[jedinec]),])
-        self.plot()
+        
+        plot.plot(self.generations)
 
     def sim_annealing(self):
         sigma = (min(self.uB)-max(self.lB))/5
@@ -222,17 +266,19 @@ class Solution:
             temp = temp*alpha
             nth+=1
         print('{:4.0f}'.format(nth) + ": Final: " + str(self.params) + ", fitness: " + str(self.fitness(self.params)))
-        self.plot()
+        
+        plot = Plotting(self.lB, self.uB, False, self.fitness)
+        plot.plot(self.generations)
 
     def ga(self):
         NP = 20
         G = 200
         D = 20  # In TSP, it will be a number of cities
 
-        plot = Plotting(self.lB,self.uB)
+        plot = Plotting(self.lB, self.uB, True, self.fitness)
         population = []
         pathLengths = []
-        jedinec = TSPInit(self.lB,self.uB,D)
+        jedinec = TSPInit(self.lB, self.uB, D)
 
         for j in range(NP):
             np.random.shuffle(jedinec)
@@ -280,6 +326,74 @@ class Solution:
             plot.plot2D(population[min_index],str(gen)+": "+str(pathLengths[min_index]))
             print('{:3.0f}'.format(gen)+": "+'{:8.4f}'.format(pathLengths[min_index]))
             #time.sleep(0.2)
+
+    def de(self):
+        plot = Plotting(self.lB, self.uB, self.fitness)
+        plot.initHeatMap("Differential Evolution")
+        NP = 10
+        G = 20
+        # D = 20  # In TSP, it will be a number of cities
+        F = 0.5
+        CR = 0.5
+
+        #plot = Plotting(self.lB, self.uB, True)
+        fitnessResults = []
+        population = []
+        jedinec = np.zeros(self.dims)
+
+        for j in range(NP):
+            for dim in range(self.dims):
+                jedinec[dim] = random.uniform(self.lB[dim], self.uB[dim])
+            population.append(np.copy(jedinec))
+            fitnessResults.append(self.fitness(jedinec))
+
+        for jedinec in range(NP):
+            print("Starting: " + str(population[jedinec]) + ", fitness: " + str(fitnessResults[jedinec]))
+
+        for gen in range(G):
+            new_population = np.copy(population)  # Offspring is always put to a new population
+
+            for firstParent in range(NP):
+                parent_A = population[firstParent]
+                restParents = np.random.choice([*range(0,firstParent),*range(firstParent+1,NP)], size=3)
+                parent_B = population[restParents[0]]
+                parent_C = population[restParents[1]]
+                parent_D = population[restParents[2]]
+
+                mutation = np.zeros(self.dims)
+                # mutation vector
+                for dim in range(self.dims):
+                    mutation[dim] = (parent_B[dim] - parent_C[dim]) * F + parent_D[dim]
+
+                    # boundaries
+                    if(mutation[dim] < self.lB[dim] or mutation[dim] > self.uB[dim]):
+                        mutation[dim] = parent_A[dim]
+
+                randomInt = np.random.randint(0, self.dims)
+                offspring = np.zeros(self.dims)
+                # combine mutation with parent_A
+                for dim in range(self.dims):
+                    if(np.random.uniform() < CR or dim == randomInt):
+                        offspring[dim] = mutation[dim]
+                    else:
+                        offspring[dim] = parent_A[dim]
+                
+                newFitness = self.fitness(offspring)
+                if(newFitness <= fitnessResults[firstParent]):
+                    fitnessResults[firstParent] = newFitness
+                    new_population[firstParent] = offspring
+
+            population = new_population
+            newGen = []
+            for jedinec in range(NP):
+                newGen.append([np.append(population[jedinec],fitnessResults[jedinec]),])
+            self.generations.append(newGen)
+            plot.plotHeatMap(newGen, "Generation: " + str(gen+1))
+
+        for jedinec in range(NP):
+            print("Final: " + str(population[jedinec]) + ", fitness: " + str(fitnessResults[jedinec]))
+        
+        plot.plotHeatMap(newGen, "Result", end = True)
 
 class Fitness:
     def rovina(params):
@@ -358,19 +472,13 @@ michalewicz = Solution([0,0],[math.pi,math.pi], False, Fitness.michalewicz)
 ag_tsp = Solution([0,0],[10,10], False, Fitness.dummy)
 
 #rovina.sim_annealing() 
-#ackley.sim_annealing() # global min 0 [0;0]
-#sphere.sim_annealing() # global min 0 [0;0]
-#schwefel.sim_annealing() # global min 0 [420.9;420.9]
-#rosenbrock.sim_annealing() # global min 0 [1;1]
-#zakharov.sim_annealing() # global min 0 [0;0]
-#griewank.sim_annealing() # global min 0 [0;0]
-#griewankDetail.sim_annealing() # global min 0 [0;0]
-#rastrigin.sim_annealing() # global min 0 [0;0]
-#levy.evolution() # global min 0 [1;1]
-#michalewicz.sim_annealing() # global min -1.8013 [2.2;1.57]
-
-
-ag_tsp.ga()
-time.sleep(5)
-
-pass
+#ackley.de() # global min 0 [0;0]
+#sphere.de() # global min 0 [0;0]
+#schwefel.de() # global min 0 [420.9;420.9]
+#rosenbrock.de() # global min 0 [1;1]
+#zakharov.de() # global min 0 [0;0]
+#griewank.de() # global min 0 [0;0]
+#griewankDetail.de() # global min 0 [0;0]
+#rastrigin.de() # global min 0 [0;0]
+#levy.de() # global min 0 [1;1]
+michalewicz.de() # global min -1.8013 [2.2;1.57]
