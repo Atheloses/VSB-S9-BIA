@@ -366,8 +366,10 @@ class Solution:
                     mutation[dim] = (parent_B[dim] - parent_C[dim]) * F + parent_D[dim]
 
                     # boundaries
-                    if(mutation[dim] < self.lB[dim] or mutation[dim] > self.uB[dim]):
-                        mutation[dim] = parent_A[dim]
+                    if(mutation[dim]<self.lB[dim]):
+                        mutation[dim]=self.lB[dim]
+                    if(mutation[dim]>self.uB[dim]):
+                        mutation[dim]=self.uB[dim]
 
                 randomInt = np.random.randint(0, self.dims)
                 offspring = np.zeros(self.dims)
