@@ -20,6 +20,7 @@ class Plotting:
 
     def initHeatMap(self, title):
         self.title = title
+        self.scatter = []
         self.X, self.Y = np.meshgrid(np.linspace(self.lB[0], self.uB[0], 100), np.linspace(self.lB[1], self.uB[1], 100))
         self.Z = self.fitness([self.X,self.Y])
         self.z_min, self.z_max = self.Z.min(), self.Z.max()
@@ -38,14 +39,18 @@ class Plotting:
         if(end):
             plt.ioff()
 
-        self.ax.clear()
+        #self.ax.clear()
         self.fig.canvas.set_window_title(name)        
-        self.ax.set_title(self.title)
-        c = self.ax.pcolormesh(self.X, self.Y, self.Z,  vmin=self.z_min, vmax=self.z_max)
-        self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
+        #self.ax.set_title(self.title)
+        #self.ax.pcolormesh(self.X, self.Y, self.Z,  vmin=self.z_min, vmax=self.z_max)
+        #self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
+
+        for sc in self.scatter:
+            sc.remove()
+        self.scatter = []
 
         for jedinec in generation:
-            self.ax.scatter(jedinec[0], jedinec[1], marker='o')
+            self.scatter.append(self.ax.scatter(jedinec[0], jedinec[1], marker='o'))
 
         if(end):
             plt.show()
@@ -124,11 +129,11 @@ class Solution:
                 particle.vel = newVel
                 newPos = particle.pos + particle.vel
 
-                for vel in range(len(newVel)): # check for position boundaries
-                    if(newPos[vel] < self.lB[vel]):
-                        newPos[vel] = self.lB[vel]
-                    if(newPos[vel] > self.uB[vel]):
-                        newPos[vel] = self.uB[vel]
+                for pos in range(len(particle.pos)): # check for position boundaries
+                    if(newPos[pos] < self.lB[pos]):
+                        newPos[pos] = self.lB[pos]
+                    if(newPos[pos] > self.uB[pos]):
+                        newPos[pos] = self.uB[pos]
                 particle.pos = newPos
 
                 pValue = self.fitness(particle.pos)
@@ -142,6 +147,11 @@ class Solution:
                 
             plot.plotHeatMap(newGen, "Generation: " + str(m+1))
         plot.plotHeatMap(newGen, "Result", end = True)
+
+    def soma(self):
+        # perturbace měnit při každém skoku
+        # perturbace vektor 1 nebo 0
+        pass
 
     def de(self):
         plot = Plotting(self.lB, self.uB, self.fitness)
