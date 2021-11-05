@@ -20,7 +20,7 @@ class Plotting:
 
         self.fig, self.ax = plt.subplots()
 
-        self.ax.set_title(self.title)
+        self.fig.canvas.set_window_title(self.title)      
         c = self.ax.pcolormesh(self.X, self.Y, self.Z, vmin=self.z_min, vmax=self.z_max)
         self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
         self.fig.colorbar(c, ax=self.ax)
@@ -32,14 +32,14 @@ class Plotting:
         if(end):
             plt.ioff()
 
-        self.fig.canvas.set_window_title(name)        
+        self.ax.set_title(name)       
 
         for sc in self.scatter:
             sc.remove()
         self.scatter = []
 
         for jedinec in generation:
-            self.scatter.append(self.ax.scatter(jedinec[0], jedinec[1], marker='o'))
+            self.scatter.append(self.ax.scatter(jedinec[0], jedinec[1], marker='o', color='black'))
 
         if(end):
             plt.show()
@@ -48,17 +48,11 @@ class Plotting:
             self.fig.canvas.flush_events()
 
 class Particle:
-    def __init__(self, lB, uB, Vmin, Vmax):
+    def __init__(self, lB, uB):
         self.pos = np.zeros(len(lB))
         for dim in range(len(lB)):
             self.pos[dim] = random.uniform(lB[dim], uB[dim])
-
-        self.pBest = np.copy(self.pos)
-        self.pBestValue = 0
-
-        self.vel = np.zeros(len(lB))
-        for dim in range(len(lB)):
-            self.vel[dim] = random.uniform(Vmin[dim], Vmax[dim])
+        self.value = 0
 
 class Solution:
     def __init__(self, lower_bound, upper_bound, maximize, fitness):
@@ -69,14 +63,73 @@ class Solution:
         self.generations = []
 
     def soma(self):
+        plot = Plotting(self.lB, self.uB, self.fitness)
+        plot.initHeatMap("Self-Organizing Migrating Algorithm")
         pop_size = 20
         pertProb = 0.4
         pathLength = 3.0
-        step = 0.11
-        M_max = 100
-        # perturbace přepočítat při každém skoku
-        # perturbace vektor 1 nebo 0
-        pass
+        stepLength = 0.22
+        M_max = 10
+
+        leader = "empty"
+        newGenPlot = [] 
+        swarm = []
+        for pop in range(pop_size):
+            newParticle = Particle(self.lB,self.uB)
+            newParticle.value = self.fitness(newParticle.pos)
+            newGenPlot.append(newParticle.pos)
+            swarm.append(newParticle)
+            if(leader == "empty" or newParticle.value < leader.value):
+                leader = newParticle
+
+        plot.plotHeatMap(newGenPlot, "SOMA: Initialization")
+
+        
+        for m in range(M_max):
+            newGenPlot = [] 
+            for particle in swarm:
+                if(particle == leader):
+                    continue
+
+                stepToLeader = []
+                for dim in range(self.dims):
+                    stepToLeader.append(leader.pos[dim] - particle.pos[dim])
+                stepToLeader = np.array(stepToLeader) * 0.11
+
+                bestPos = np.copy(particle.pos)
+                bestValue = particle.value
+                for step in range(math.ceil(pathLength/stepLength)):
+                    perturbation = []
+                    for dim in range(self.dims):
+                        if(random.random() < pertProb):
+                            perturbation.append(1)
+                        else:
+                            perturbation.append(0)
+                        
+                    particle.pos += stepToLeader * np.array(perturbation)
+
+                    for pos in range(len(particle.pos)): # check for position boundaries
+                        if(particle.pos[pos] < self.lB[pos]):
+                            particle.pos[pos] = self.lB[pos]
+                        if(particle.pos[pos] > self.uB[pos]):
+                            particle.pos[pos] = self.uB[pos]
+
+                    particle.value = self.fitness(particle.pos)
+                    if(particle.value < bestValue):
+                        bestValue = particle.value
+                        bestPos = np.copy(particle.pos)
+
+                particle.pos = bestPos
+                particle.value = bestValue
+                newGenPlot.append(particle.pos)
+
+            leader = swarm[0]
+            for particle in swarm:
+                if(particle.value < leader.value):
+                    leader = particle
+                
+            plot.plotHeatMap(newGenPlot, "SOMA: Generation " + str(m+1))
+        plot.plotHeatMap(newGenPlot, "SOMA: Result", end = True)
 
 class Fitness:
     def rovina(params):
@@ -155,13 +208,13 @@ michalewicz = Solution([0,0],[math.pi,math.pi], False, Fitness.michalewicz)
 ag_tsp = Solution([0,0],[10,10], False, Fitness.dummy)
 
 #rovina.sim_annealing() 
-#ackley.de() # global min 0 [0;0]
-#sphere.de() # global min 0 [0;0]
-#schwefel.de() # global min 0 [420.9;420.9]
-#rosenbrock.de() # global min 0 [1;1]
-#zakharov.de() # global min 0 [0;0]
-#griewank.de() # global min 0 [0;0]
-#griewankDetail.de() # global min 0 [0;0]
-#rastrigin.de() # global min 0 [0;0]
-#levy.de() # global min 0 [1;1]
-michalewicz.soma() # global min -1.8013 [2.2;1.57]
+#ackley.soma() # global min 0 [0;0]
+#sphere.soma() # global min 0 [0;0]
+#schwefel.soma() # global min 0 [420.9;420.9]
+#rosenbrock.soma() # global min 0 [1;1]
+#zakharov.soma() # global min 0 [0;0]
+#griewank.soma() # global min 0 [0;0]
+#griewankDetail.soma() # global min 0 [0;0]
+rastrigin.soma() # global min 0 [0;0]
+#levy.soma() # global min 0 [1;1]
+#michalewicz.soma() # global min -1.8013 [2.2;1.57]

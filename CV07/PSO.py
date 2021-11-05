@@ -222,13 +222,13 @@ michalewicz = Solution([0,0],[math.pi,math.pi], False, Fitness.michalewicz)
 ag_tsp = Solution([0,0],[10,10], False, Fitness.dummy)
 
 #rovina.sim_annealing() 
-#ackley.de() # global min 0 [0;0]
-#sphere.de() # global min 0 [0;0]
-#schwefel.de() # global min 0 [420.9;420.9]
-#rosenbrock.de() # global min 0 [1;1]
-#zakharov.de() # global min 0 [0;0]
-#griewank.de() # global min 0 [0;0]
-#griewankDetail.de() # global min 0 [0;0]
-#rastrigin.de() # global min 0 [0;0]
-#levy.de() # global min 0 [1;1]
+#ackley.pso() # global min 0 [0;0]
+#sphere.pso() # global min 0 [0;0]
+#schwefel.pso() # global min 0 [420.9;420.9]
+#rosenbrock.pso() # global min 0 [1;1]
+#zakharov.pso() # global min 0 [0;0]
+#griewank.pso() # global min 0 [0;0]
+#griewankDetail.pso() # global min 0 [0;0]
+#rastrigin.pso() # global min 0 [0;0]
+#levy.pso() # global min 0 [1;1]
 michalewicz.pso() # global min -1.8013 [2.2;1.57]
