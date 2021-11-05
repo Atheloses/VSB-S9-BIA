@@ -20,8 +20,8 @@ class Plotting:
 
         self.fig, self.ax = plt.subplots()
 
-        self.fig.canvas.set_window_title(self.title)      
-        c = self.ax.pcolormesh(self.X, self.Y, self.Z, vmin=self.z_min, vmax=self.z_max)
+        self.fig.canvas.manager.set_window_title(self.title)      
+        c = self.ax.pcolormesh(self.X, self.Y, self.Z, vmin=self.z_min, vmax=self.z_max, shading='auto')
         self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
         self.fig.colorbar(c, ax=self.ax)
         
