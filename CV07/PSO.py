@@ -1,14 +1,7 @@
 import matplotlib.pyplot as plt
-from matplotlib.path import Path
-import matplotlib.patches as patches
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator
 import numpy as np
 import random
 import math
-import time
-
-from numpy.lib.function_base import append
 
 class Plotting:
     def __init__(self, lB, uB, fitness):
@@ -39,11 +32,7 @@ class Plotting:
         if(end):
             plt.ioff()
 
-        #self.ax.clear()
         self.fig.canvas.set_window_title(name)        
-        #self.ax.set_title(self.title)
-        #self.ax.pcolormesh(self.X, self.Y, self.Z,  vmin=self.z_min, vmax=self.z_max)
-        #self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
 
         for sc in self.scatter:
             sc.remove()
@@ -76,11 +65,8 @@ class Solution:
         self.dims = len(lower_bound)
         self.lB = lower_bound  # we will use the same bounds for all parameters
         self.uB = upper_bound
-        self.params = np.zeros(self.dims) #solution parameters
-        self.f = np.inf  # objective function evaluation
         self.fitness = fitness
         self.generations = []
-        self.maximize = maximize
 
     def pso(self):
         plot = Plotting(self.lB, self.uB, self.fitness)
@@ -149,78 +135,15 @@ class Solution:
         plot.plotHeatMap(newGen, "Result", end = True)
 
     def soma(self):
-        # perturbace měnit při každém skoku
+        pop_size = 20
+        pertProb = 0.4
+        pathLength = 3.0
+        step = 0.11
+        M_max = 100
+        # perturbace přepočítat při každém skoku
         # perturbace vektor 1 nebo 0
         pass
 
-    def de(self):
-        plot = Plotting(self.lB, self.uB, self.fitness)
-        plot.initHeatMap("Differential Evolution")
-        NP = 10
-        G = 20
-        # D = 20  # In TSP, it will be a number of cities
-        F = 0.5
-        CR = 0.5
-
-        #plot = Plotting(self.lB, self.uB, True)
-        fitnessResults = []
-        population = []
-        jedinec = np.zeros(self.dims)
-
-        for j in range(NP):
-            for dim in range(self.dims):
-                jedinec[dim] = random.uniform(self.lB[dim], self.uB[dim])
-            population.append(np.copy(jedinec))
-            fitnessResults.append(self.fitness(jedinec))
-
-        for jedinec in range(NP):
-            print("Starting: " + str(population[jedinec]) + ", fitness: " + str(fitnessResults[jedinec]))
-
-        for gen in range(G):
-            new_population = np.copy(population)  # Offspring is always put to a new population
-
-            for firstParent in range(NP):
-                parent_A = population[firstParent]
-                restParents = np.random.choice([*range(0,firstParent),*range(firstParent+1,NP)], size=3)
-                parent_B = population[restParents[0]]
-                parent_C = population[restParents[1]]
-                parent_D = population[restParents[2]]
-
-                mutation = np.zeros(self.dims)
-                # mutation vector
-                for dim in range(self.dims):
-                    mutation[dim] = (parent_B[dim] - parent_C[dim]) * F + parent_D[dim]
-
-                    # boundaries
-                    if(mutation[dim]<self.lB[dim]):
-                        mutation[dim]=self.lB[dim]
-                    if(mutation[dim]>self.uB[dim]):
-                        mutation[dim]=self.uB[dim]
-
-                randomInt = np.random.randint(0, self.dims)
-                offspring = np.zeros(self.dims)
-                # combine mutation with parent_A
-                for dim in range(self.dims):
-                    if(np.random.uniform() < CR or dim == randomInt):
-                        offspring[dim] = mutation[dim]
-                    else:
-                        offspring[dim] = parent_A[dim]
-                
-                newFitness = self.fitness(offspring)
-                if(newFitness <= fitnessResults[firstParent]):
-                    fitnessResults[firstParent] = newFitness
-                    new_population[firstParent] = offspring
-
-            population = new_population
-            newGen = []
-            for jedinec in range(NP):
-                newGen.append(np.append(population[jedinec],fitnessResults[jedinec]))
-            plot.plotHeatMap(newGen, "Generation: " + str(gen+1))
-
-        for jedinec in range(NP):
-            print("Final: " + str(population[jedinec]) + ", fitness: " + str(fitnessResults[jedinec]))
-        
-        plot.plotHeatMap(newGen, "Result", end = True)
 
 class Fitness:
     def rovina(params):
