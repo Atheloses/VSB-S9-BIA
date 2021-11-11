@@ -94,7 +94,7 @@ class Solution:
                 stepToLeader = []
                 for dim in range(self.dims):
                     stepToLeader.append(leader.pos[dim] - particle.pos[dim])
-                stepToLeader = np.array(stepToLeader) * 0.11
+                stepToLeader = np.array(stepToLeader) * stepLength
 
                 bestPos = np.copy(particle.pos)
                 bestValue = particle.value
