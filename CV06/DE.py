@@ -20,7 +20,7 @@ class Plotting:
 
         self.fig, self.ax = plt.subplots()
 
-        self.ax.set_title(self.title)
+        self.fig.canvas.manager.set_window_title(self.title)
         c = self.ax.pcolormesh(self.X, self.Y, self.Z, vmin=self.z_min, vmax=self.z_max)
         self.ax.axis([self.lB[0], self.uB[0], self.lB[1], self.uB[1]])
         self.fig.colorbar(c, ax=self.ax)
@@ -28,18 +28,22 @@ class Plotting:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-    def plotHeatMap(self, generation, name, end=False):
+    def plotHeatMap(self, generation, name, end = False, leader = -1):
         if(end):
             plt.ioff()
 
-        self.fig.canvas.set_window_title(name)        
+        self.ax.set_title(name)       
 
         for sc in self.scatter:
             sc.remove()
         self.scatter = []
 
-        for jedinec in generation:
-            self.scatter.append(self.ax.scatter(jedinec[0], jedinec[1], marker='o'))
+        for index in range(len(generation)):
+            if(index != leader):
+                self.scatter.append(self.ax.scatter(generation[index][0], generation[index][1], marker='o', color='black'))
+
+        if(leader>=0):
+            self.scatter.append(self.ax.scatter(generation[leader][0], generation[leader][1], marker='o', color='red'))
 
         if(end):
             plt.show()
@@ -49,7 +53,7 @@ class Plotting:
 
 
 class Solution:
-    def __init__(self, lower_bound, upper_bound, maximize, fitness):
+    def __init__(self, lower_bound, upper_bound, fitness):
         self.dims = len(lower_bound)
         self.lB = lower_bound  # we will use the same bounds for all parameters
         self.uB = upper_bound
@@ -68,16 +72,14 @@ class Solution:
         #plot = Plotting(self.lB, self.uB, True)
         fitnessResults = []
         population = []
-        jedinec = np.zeros(self.dims)
+        individual = np.zeros(self.dims)
 
-        for j in range(NP):
+        for index in range(NP):
             for dim in range(self.dims):
-                jedinec[dim] = random.uniform(self.lB[dim], self.uB[dim])
-            population.append(np.copy(jedinec))
-            fitnessResults.append(self.fitness(jedinec))
-
-        for jedinec in range(NP):
-            print("Starting: " + str(population[jedinec]) + ", fitness: " + str(fitnessResults[jedinec]))
+                individual[dim] = random.uniform(self.lB[dim], self.uB[dim])
+            population.append(np.copy(individual))
+            fitnessResults.append(self.fitness(individual))
+            # print("Starting: " + str(population[index]) + ", fitness: " + str(fitnessResults[index]))
 
         for gen in range(G):
             new_population = np.copy(population)  # Offspring is always put to a new population
@@ -116,14 +118,17 @@ class Solution:
 
             population = new_population
             newGen = []
-            for jedinec in range(NP):
-                newGen.append(np.append(population[jedinec],fitnessResults[jedinec]))
-            plot.plotHeatMap(newGen, "Generation: " + str(gen+1))
+            bestIndex = 0
+            for index in range(NP):
+                newGen.append(np.append(population[index],fitnessResults[index]))
+                if(fitnessResults[index] < fitnessResults[bestIndex]):
+                    bestIndex = index
+            plot.plotHeatMap(newGen, "DE, generation: " + str(gen+1) + ", best: " + '{:8.4f}'.format(fitnessResults[bestIndex]),leader = bestIndex)
 
-        for jedinec in range(NP):
-            print("Final: " + str(population[jedinec]) + ", fitness: " + str(fitnessResults[jedinec]))
+        for index in range(NP):
+            print("Final: " + str(population[index]) + ", fitness: " + str(fitnessResults[index]))
         
-        plot.plotHeatMap(newGen, "Result", end = True)
+        plot.plotHeatMap(newGen, "DE, result, best: " + '{:8.4f}'.format(fitnessResults[bestIndex]), end = True, leader = bestIndex)
 
 class Fitness:
     def rovina(params):
@@ -188,18 +193,18 @@ class Fitness:
     def dummy(params):
         pass
 
-rovina = Solution([-1,-1],[1,1], False, Fitness.rovina)
-ackley = Solution([-32.768,-32.768],[32.768,32.768], False, Fitness.ackley)
-sphere = Solution([-5.12,-5.12],[5.12,5.12], False, Fitness.sphere)
-schwefel = Solution([-500,-500],[500,500], False, Fitness.schwefel)
-rosenbrock = Solution([-10,-10],[10,10], False, Fitness.rosenbrock)
-zakharov = Solution([-10,-10],[10,10], False, Fitness.zakharov)
-griewank = Solution([-600,-600],[600,600], False, Fitness.griewank)
-griewankDetail = Solution([-5,-5],[5,5], False, Fitness.griewank)
-rastrigin = Solution([-5.12,-5.12],[5.12,5.12], False, Fitness.rastrigin)
-levy = Solution([-10,-10],[10,10], False, Fitness.levy)
-michalewicz = Solution([0,0],[math.pi,math.pi], False, Fitness.michalewicz)
-ag_tsp = Solution([0,0],[10,10], False, Fitness.dummy)
+rovina = Solution([-1,-1],[1,1], Fitness.rovina)
+ackley = Solution([-32.768,-32.768],[32.768,32.768], Fitness.ackley)
+sphere = Solution([-5.12,-5.12],[5.12,5.12], Fitness.sphere)
+schwefel = Solution([-500,-500],[500,500], Fitness.schwefel)
+rosenbrock = Solution([-10,-10],[10,10], Fitness.rosenbrock)
+zakharov = Solution([-10,-10],[10,10], Fitness.zakharov)
+griewank = Solution([-600,-600],[600,600], Fitness.griewank)
+griewankDetail = Solution([-5,-5],[5,5], Fitness.griewank)
+rastrigin = Solution([-5.12,-5.12],[5.12,5.12], Fitness.rastrigin)
+levy = Solution([-10,-10],[10,10], Fitness.levy)
+michalewicz = Solution([0,0],[math.pi,math.pi], Fitness.michalewicz)
+ag_tsp = Solution([0,0],[10,10], Fitness.dummy)
 
 #rovina.sim_annealing() 
 #ackley.de() # global min 0 [0;0]

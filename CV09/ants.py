@@ -14,7 +14,7 @@ class Plotting:
         self.figure = 0
         self.fitness = fitness
 
-    def init2D(self, title):
+    def initPath(self, title):
         self.title = title
         self.patches = []
 
@@ -27,7 +27,7 @@ class Plotting:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-    def plot2D(self, path, cities, name, end=False):
+    def plotPath(self, path, cities, name, end=False):
         if(end):
             plt.ioff()
         
@@ -86,7 +86,7 @@ def pathLength(path, distances):
     return pathLength
 
 class Solution:
-    def __init__(self, lower_bound, upper_bound, maximize, fitness="empty"):
+    def __init__(self, lower_bound, upper_bound, fitness="empty"):
         self.dims = len(lower_bound)
         self.lB = lower_bound  # we will use the same bounds for all parameters
         self.uB = upper_bound
@@ -95,7 +95,7 @@ class Solution:
 
     def ants(self, G, D, antsCount):
         plot = Plotting(self.lB, self.uB, self.fitness)
-        plot.init2D("Ant Colony Optimization")
+        plot.initPath("Ant Colony Optimization")
 
         matrixVisited = np.zeros((antsCount,D,D))
         matrixVisibility = np.zeros((D,D))
@@ -166,15 +166,15 @@ class Solution:
             
             # presenting data
             min_index = np.argmin(antsPathValues)
-            plot.plot2D(antsPath[min_index],cities,str(gen+1)+": "+'{:8.4f}'.format(antsPathValues[min_index]))
+            plot.plotPath(antsPath[min_index],cities,"Ants, generation: " + str(gen+1) + ", best: " + '{:8.4f}'.format(antsPathValues[min_index]))
             print('{:3.0f}'.format(gen+1)+": "+'{:8.4f}'.format(antsPathValues[min_index]))
             if(globalMinValue>antsPathValues[min_index]):
                 globalMinPath = np.copy(antsPath[min_index])
                 globalMinValue = antsPathValues[min_index]
         
-        plot.plot2D(globalMinPath,cities,"best: "+'{:8.4f}'.format(globalMinValue), end=True)
+        plot.plotPath(globalMinPath,cities,"Ants, result, best: "+'{:8.4f}'.format(globalMinValue), end=True)
         print("best: "+'{:8.4f}'.format(globalMinValue))
 
 
-tsp = Solution([0,0],[10,10], False)
+tsp = Solution([0,0],[10,10])
 tsp.ants(50, 20, 10)

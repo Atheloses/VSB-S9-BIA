@@ -6,38 +6,61 @@ import random
 import math
 
 class Plotting:
-    def plot(self, generations, lB, uB, fitness):
-        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    def __init__(self, lB, uB, fitness):
+        self.lB = lB
+        self.uB = uB
+        plt.ion()
+        self.figure = 0
+        self.fitness = fitness
+        self.scatter = []
 
-        # Make data.
-        X = np.arange(lB[0], uB[0], (uB[0]-lB[0])/50)
-        Y = np.arange(lB[1], uB[1], (uB[1]-lB[1])/50)
+    def init3D(self, title):
+        self.title = title
+
+        self.fig, self.ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+        X = np.arange(self.lB[0], self.uB[0], (self.uB[0]-self.lB[0])/50)
+        Y = np.arange(self.lB[1], self.uB[1], (self.uB[1]-self.lB[1])/50)
         X, Y = np.meshgrid(X, Y)
-        #R = np.sqrt(X**2 + Y**2)
-        #Z = np.sin(R)
-        Z = fitness([X,Y])
+        Z = self.fitness([X,Y])
 
         # Plot the surface.
-        surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False, alpha=0.5)
+        surf = self.ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False, alpha=0.5)
 
-        for generation in generations:
-            for jedinec in generation:
-                ax.scatter(jedinec[0], jedinec[1], jedinec[2], marker='o')
-        minZ = np.min(Z)
-        maxZ = np.max(Z)
-        # Customize the z axis.
-        ax.set_zlim(minZ, maxZ)
-        ax.zaxis.set_major_locator(LinearLocator(10))
-        # A StrMethodFormatter is used automatically
-        ax.zaxis.set_major_formatter('{x:.02f}')
+        self.fig.colorbar(surf, shrink=0.5, aspect=5)
 
-        # Add a color bar which maps values to colors.
-        fig.colorbar(surf, shrink=0.5, aspect=5)
+        self.fig.canvas.manager.set_window_title(self.title)    
 
-        plt.show()
+        self.ax.set_xlim(self.lB[0], self.uB[0])
+        self.ax.set_ylim(self.lB[1], self.uB[1])
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+    def plot3D(self, generation, fitnessValues, name, end=False , leader = -1):
+        if(end):
+            plt.ioff()
+
+        self.ax.set_title(name)       
+
+        for sc in self.scatter:
+            sc.remove()
+        self.scatter = []
+
+        for index in range(len(generation)):
+            if(index != leader):
+                self.scatter.append(self.ax.scatter(generation[index][0], generation[index][1], fitnessValues[index], marker='o', color='black'))
+
+        if(leader>=0):
+            self.scatter.append(self.ax.scatter(generation[leader][0], generation[leader][1], fitnessValues[index], marker='o', color='red'))
+
+        if(end):
+            plt.show()
+        else:
+            self.fig.canvas.draw()
+            self.fig.canvas.flush_events()
 
 class Solution:
-    def __init__(self, lower_bound, upper_bound, maximize, fitness):
+    def __init__(self, lower_bound, upper_bound, fitness):
         self.dims = len(lower_bound)
         self.lB = lower_bound  # we will use the same bounds for all parameters
         self.uB = upper_bound
@@ -45,47 +68,18 @@ class Solution:
         self.f = np.inf  # objective function evaluation
         self.fitness = fitness
         self.generations = []
-        self.maximize = maximize
-
-    def plot(self):
-        Plotting().plot(self.generations, self.lB, self.uB, self.fitness)
-
-    def hill_climbing(self):
-        sigma = (min(self.uB)-max(self.lB))/5
-        numberOfGens = 100
-
-        for dim in range(self.dims):
-            self.params[dim] = random.uniform(self.lB[dim], self.uB[dim])
-        print("Starting position: " + str(self.params))
-
-        lastFitness = self.fitness.hill_climbing(self.params)
-        self.generations.append([np.append(self.params,lastFitness),])
-        for gen in range(numberOfGens):
-            tempParams = np.random.normal(self.params,sigma)
-            
-            for dim in range(self.dims):
-                if(tempParams[dim]<self.lB[dim]):
-                    tempParams[dim]=self.params[dim]
-                if(tempParams[dim]>self.uB[dim]):
-                    tempParams[dim]=self.params[dim]
-
-            tempFitness = self.fitness(tempParams)
-            if(self.maximize and tempFitness > lastFitness or not self.maximize and tempFitness < lastFitness):
-                print("Generated: " + str(tempParams) + ", fitness: " + str(tempFitness))
-                lastFitness = tempFitness
-                self.params = tempParams
-                self.generations.append([np.append(self.params,lastFitness),])
-
-        print("Final: " + str(self.params) + ", fitness: " + str(self.fitness(self.params)))
-        self.plot()
 
     def evolution(self):
+        plot = Plotting(self.lB, self.uB, self.fitness)
+        plot.init3D("Differential Evolution")
+
         params = []
         sigma = 0.5
         numberOfGens = 100
         populationSize = 20
         lastFitness = []
-        konstanta = 0.817
+        constant = 0.817
+        bestIndex = 0
 
         for i in range(populationSize):
             location = []
@@ -93,79 +87,39 @@ class Solution:
                 location.append(random.uniform(self.lB[dim], self.uB[dim]))
             params.append(location)
             lastFitness.append(self.fitness(location))
-            #self.generations.append([np.append(location,self.fitness(location)),])
 
         for gen in range(numberOfGens):
             better = 0
-            for jedinec in range(populationSize):
-                tempParams = np.random.normal(params[jedinec], sigma)
+            for individual in range(populationSize):
+                tempParams = np.random.normal(params[individual], sigma)
                 for dim in range(self.dims):
                     if(tempParams[dim]<self.lB[dim]):
-                        tempParams[dim]=params[jedinec][dim]
+                        tempParams[dim]=params[individual][dim]
                     if(tempParams[dim]>self.uB[dim]):
-                        tempParams[dim]=params[jedinec][dim]
+                        tempParams[dim]=params[individual][dim]
 
                 tempFitness = self.fitness(tempParams)
-                if(self.maximize and tempFitness > lastFitness[jedinec] or not self.maximize and tempFitness < lastFitness[jedinec]):
-                    print("Generated: " + str(tempParams) + ", fitness: " + str(tempFitness))
-                    lastFitness[jedinec] = tempFitness
-                    params[jedinec] = tempParams
+                if(tempFitness < lastFitness[individual]):
+                    # print("Generated: " + str(tempParams) + ", fitness: " + str(tempFitness))
+                    lastFitness[individual] = tempFitness
+                    params[individual] = tempParams
                     better = better + 1
-                    #self.generations.append([np.append(tempParams,tempFitness),])
+
+                if(lastFitness[individual]<lastFitness[bestIndex]):
+                    bestIndex = individual
 
             if(better < populationSize/5):
-                sigma = konstanta*sigma
+                sigma = constant*sigma
             elif(better > populationSize/5):
-                sigma = sigma/konstanta
-            
-        for jedinec in range(populationSize):
-            print("Final: " + str(params[jedinec]) + ", fitness: " + str(lastFitness[jedinec]))
-            self.generations.append([np.append(params[jedinec],lastFitness[jedinec]),])
-        self.plot()
+                sigma = sigma/constant
 
-    def sim_annealing(self):
-        sigma = (min(self.uB)-max(self.lB))/5
-        temp = 500
-        tempMin = 0.01
-        alpha = 0.97
 
-        for dim in range(self.dims):
-            self.params[dim] = random.uniform(self.lB[dim], self.uB[dim])
-        print("Starting position: " + str(self.params))
-
-        lastFitness = self.fitness(self.params)
-        self.generations.append([np.append(self.params,lastFitness),])
-        nth = 0
-        while temp > tempMin:
-            tempParams = np.random.normal(self.params,sigma)
+            #plot.plot3D(params, lastFitness, "DE, generation: " + str(gen+1) + ", best: " + '{:8.4f}'.format(lastFitness[bestIndex]), leader = bestIndex)
+           
+        for individual in range(populationSize):
+            print("Final: " + str(params[individual]) + ", fitness: " + '{:8.4f}'.format(lastFitness[individual]))
             
-            for dim in range(self.dims):
-                if(tempParams[dim]<self.lB[dim]):
-                    tempParams[dim]=self.params[dim]
-                if(tempParams[dim]>self.uB[dim]):
-                    tempParams[dim]=self.params[dim]
-            
-            tempFitness = self.fitness(tempParams)
-            if(self.maximize and tempFitness > lastFitness or not self.maximize and tempFitness < lastFitness):
-                print('{:4.0f}'.format(nth) + ": Generated: [" + '{:8.4f}'.format(tempParams[0]) + "; " + '{:8.4f}'.format(tempParams[1]) + "], fitness: " + '{:8.4f}'.format(tempFitness) + ", better fitness")
-                lastFitness = tempFitness
-                self.params = tempParams
-                self.generations.append([np.append(self.params,lastFitness),])
-            else:
-                r = np.random.uniform(0,1)
-                if(self.maximize):
-                    annealing = math.e**(-((lastFitness-tempFitness)/temp))
-                else:
-                    annealing = math.e**(-((tempFitness-lastFitness)/temp))
-                if( r < annealing):
-                    print('{:4.0f}'.format(nth) + ": Generated: [" + '{:8.4f}'.format(tempParams[0]) + "; " + '{:8.4f}'.format(tempParams[1]) + "], fitness: " + '{:8.4f}'.format(tempFitness) + ", annealing with " + str(round(annealing,2)))
-                    lastFitness = tempFitness
-                    self.params = tempParams
-                    self.generations.append([np.append(self.params,lastFitness),])
-            temp = temp*alpha
-            nth+=1
-        print('{:4.0f}'.format(nth) + ": Final: " + str(self.params) + ", fitness: " + str(self.fitness(self.params)))
-        self.plot()
+        plot.plot3D(params, lastFitness, "DE, final, best: " + '{:8.4f}'.format(lastFitness[bestIndex]), end = True, leader = bestIndex)
 
 class Fitness:
     def rovina(params):
@@ -227,26 +181,26 @@ class Fitness:
         m = 10
         return -(np.sin(x1)*np.sin( 1*x1**2 /math.pi)**(2*m) + np.sin(x2)*np.sin( 2*x2**2 /math.pi)**(2*m))
 
-rovina = Solution([-1,-1],[1,1], False, Fitness.rovina)
-ackley = Solution([-32.768,-32.768],[32.768,32.768], False, Fitness.ackley)
-sphere = Solution([-5.12,-5.12],[5.12,5.12], False, Fitness.sphere)
-schwefel = Solution([-500,-500],[500,500], False, Fitness.schwefel)
-rosenbrock = Solution([-10,-10],[10,10], False, Fitness.rosenbrock)
-zakharov = Solution([-10,-10],[10,10], False, Fitness.zakharov)
-griewank = Solution([-600,-600],[600,600], False, Fitness.griewank)
-griewankDetail = Solution([-5,-5],[5,5], False, Fitness.griewank)
-rastrigin = Solution([-5.12,-5.12],[5.12,5.12], False, Fitness.rastrigin)
-levy = Solution([-10,-10],[10,10], False, Fitness.levy)
-michalewicz = Solution([0,0],[math.pi,math.pi], False, Fitness.michalewicz)
+rovina = Solution([-1,-1],[1,1], Fitness.rovina)
+ackley = Solution([-32.768,-32.768],[32.768,32.768], Fitness.ackley)
+sphere = Solution([-5.12,-5.12],[5.12,5.12], Fitness.sphere)
+schwefel = Solution([-500,-500],[500,500], Fitness.schwefel)
+rosenbrock = Solution([-10,-10],[10,10], Fitness.rosenbrock)
+zakharov = Solution([-10,-10],[10,10], Fitness.zakharov)
+griewank = Solution([-600,-600],[600,600], Fitness.griewank)
+griewankDetail = Solution([-5,-5],[5,5], Fitness.griewank)
+rastrigin = Solution([-5.12,-5.12],[5.12,5.12], Fitness.rastrigin)
+levy = Solution([-10,-10],[10,10], Fitness.levy)
+michalewicz = Solution([0,0],[math.pi,math.pi], Fitness.michalewicz)
 
-#rovina.sim_annealing() 
-#ackley.sim_annealing() # global min 0 [0;0]
-#sphere.sim_annealing() # global min 0 [0;0]
-#schwefel.sim_annealing() # global min 0 [420.9;420.9]
-#rosenbrock.sim_annealing() # global min 0 [1;1]
-#zakharov.sim_annealing() # global min 0 [0;0]
-#griewank.sim_annealing() # global min 0 [0;0]
-#griewankDetail.sim_annealing() # global min 0 [0;0]
-#rastrigin.sim_annealing() # global min 0 [0;0]
+#rovina.evolution() 
+#ackley.evolution() # global min 0 [0;0]
+#sphere.evolution() # global min 0 [0;0]
+#schwefel.evolution() # global min 0 [420.9;420.9]
+#rosenbrock.evolution() # global min 0 [1;1]
+#zakharov.evolution() # global min 0 [0;0]
+#griewank.evolution() # global min 0 [0;0]
+#griewankDetail.evolution() # global min 0 [0;0]
+#rastrigin.evolution() # global min 0 [0;0]
 levy.evolution() # global min 0 [1;1]
-#michalewicz.sim_annealing() # global min -1.8013 [2.2;1.57]
+#michalewicz.evolution() # global min -1.8013 [2.2;1.57]

@@ -28,7 +28,7 @@ class Plotting:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-    def plotHeatMap(self, generation, name, end=False):
+    def plotHeatMap(self, generation, name, end = False, leader = -1):
         if(end):
             plt.ioff()
 
@@ -38,8 +38,12 @@ class Plotting:
             sc.remove()
         self.scatter = []
 
-        for jedinec in generation:
-            self.scatter.append(self.ax.scatter(jedinec[0], jedinec[1], marker='o', color='black'))
+        for index in range(len(generation)):
+            if(index != leader):
+                self.scatter.append(self.ax.scatter(generation[index][0], generation[index][1], marker='o', color='black'))
+
+        if(leader>=0):
+            self.scatter.append(self.ax.scatter(generation[leader][0], generation[leader][1], marker='o', color='red'))
 
         if(end):
             plt.show()
@@ -55,7 +59,7 @@ class Particle:
         self.value = 0
 
 class Solution:
-    def __init__(self, lower_bound, upper_bound, maximize, fitness):
+    def __init__(self, lower_bound, upper_bound, fitness):
         self.dims = len(lower_bound)
         self.lB = lower_bound  # we will use the same bounds for all parameters
         self.uB = upper_bound
@@ -86,7 +90,6 @@ class Solution:
 
         
         for m in range(M_max):
-            newGenPlot = [] 
             for particle in swarm:
                 if(particle == leader):
                     continue
@@ -121,15 +124,16 @@ class Solution:
 
                 particle.pos = bestPos
                 particle.value = bestValue
-                newGenPlot.append(particle.pos)
 
+            newGenPlot = [] 
             leader = swarm[0]
             for particle in swarm:
+                newGenPlot.append(particle.pos)
                 if(particle.value < leader.value):
                     leader = particle
                 
-            plot.plotHeatMap(newGenPlot, "SOMA: Generation " + str(m+1))
-        plot.plotHeatMap(newGenPlot, "SOMA: Result", end = True)
+            plot.plotHeatMap(newGenPlot, "SOMA, generation: " + str(m+1) + ", best: " + '{:8.4f}'.format(leader.value), leader = swarm.index(leader))
+        plot.plotHeatMap(newGenPlot, "SOMA, result, best: " + '{:8.4f}'.format(leader.value), end = True, leader = swarm.index(leader))
 
 class Fitness:
     def rovina(params):
@@ -194,18 +198,18 @@ class Fitness:
     def dummy(params):
         pass
 
-rovina = Solution([-1,-1],[1,1], False, Fitness.rovina)
-ackley = Solution([-32.768,-32.768],[32.768,32.768], False, Fitness.ackley)
-sphere = Solution([-5.12,-5.12],[5.12,5.12], False, Fitness.sphere)
-schwefel = Solution([-500,-500],[500,500], False, Fitness.schwefel)
-rosenbrock = Solution([-10,-10],[10,10], False, Fitness.rosenbrock)
-zakharov = Solution([-10,-10],[10,10], False, Fitness.zakharov)
-griewank = Solution([-600,-600],[600,600], False, Fitness.griewank)
-griewankDetail = Solution([-5,-5],[5,5], False, Fitness.griewank)
-rastrigin = Solution([-5.12,-5.12],[5.12,5.12], False, Fitness.rastrigin)
-levy = Solution([-10,-10],[10,10], False, Fitness.levy)
-michalewicz = Solution([0,0],[math.pi,math.pi], False, Fitness.michalewicz)
-ag_tsp = Solution([0,0],[10,10], False, Fitness.dummy)
+rovina = Solution([-1,-1],[1,1], Fitness.rovina)
+ackley = Solution([-32.768,-32.768],[32.768,32.768], Fitness.ackley)
+sphere = Solution([-5.12,-5.12],[5.12,5.12], Fitness.sphere)
+schwefel = Solution([-500,-500],[500,500], Fitness.schwefel)
+rosenbrock = Solution([-10,-10],[10,10], Fitness.rosenbrock)
+zakharov = Solution([-10,-10],[10,10], Fitness.zakharov)
+griewank = Solution([-600,-600],[600,600], Fitness.griewank)
+griewankDetail = Solution([-5,-5],[5,5], Fitness.griewank)
+rastrigin = Solution([-5.12,-5.12],[5.12,5.12], Fitness.rastrigin)
+levy = Solution([-10,-10],[10,10], Fitness.levy)
+michalewicz = Solution([0,0],[math.pi,math.pi], Fitness.michalewicz)
+ag_tsp = Solution([0,0],[10,10], Fitness.dummy)
 
 #rovina.sim_annealing() 
 #ackley.soma() # global min 0 [0;0]
