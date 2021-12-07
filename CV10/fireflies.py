@@ -51,8 +51,12 @@ class Plotting:
         if(end):
             plt.show()
         else:
-            self.fig.canvas.draw()
-            self.fig.canvas.flush_events()
+            try:
+                self.fig.canvas.draw()
+                self.fig.canvas.flush_events()
+            except:
+                return False
+        return True
 
 class Solution:
     def __init__(self, lower_bound, upper_bound, fitness):
@@ -111,7 +115,7 @@ class Solution:
                         alpha = np.zeros(len(self.lB))
                         epsilon = np.zeros(len(self.lB))
                         for dim in range(self.dims):
-                            alpha[dim] = random.uniform(0, (self.uB[dim]-self.lB[dim])/20)
+                            alpha[dim] = random.uniform(0, (self.uB[dim]-self.lB[dim])/20) # either this or the epsilon should be generated only once at start
                             epsilon[dim] = np.random.normal(0, 1)
 
                         self.params[i] += attractivness*math.e**(-absorption*distance_ij**2)*(self.params[j]-self.params[i]) 
@@ -141,12 +145,14 @@ class Solution:
 
             #print("Best: "+ '{:8.4f}'.format(lastFitness[leaderIndex]) + ", index: " + str(leaderIndex))
             if gen % redrawGen == 0:
-                plot.plotHeatMap(self.params, "Fireflies, generation: " + str(gen+1) + ", best: " + '{:8.4f}'.format(lastFitness[leaderIndex]), False, leaderIndex)
+                if not plot.plotHeatMap(self.params, "Fireflies, generation: " + str(gen+1) + ", best: " + '{:8.4f}'.format(lastFitness[leaderIndex]), False, leaderIndex):
+                    return -1
             
         for firefly in range(populationSize):
             print("Final: " + str(self.params[firefly]) + ", fitness: " + str(lastFitness[firefly]))
             self.generations.append([np.append(self.params[firefly],lastFitness[firefly]),])
         plot.plotHeatMap(self.params, "Fireflies, last generation, best: " + '{:8.4f}'.format(lastFitness[leaderIndex]), True, leaderIndex)
+        return 0
 
 class Fitness:
     def rovina(params):
