@@ -101,7 +101,7 @@ class Solution:
 
                 bestPos = np.copy(particle.pos)
                 bestValue = particle.value
-                for step in range(math.ceil(pathLength/stepLength)):
+                for step in range(math.floor(pathLength/stepLength)):
                     perturbation = []
                     for dim in range(self.dims):
                         if(random.random() < pertProb):
