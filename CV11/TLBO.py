@@ -76,12 +76,6 @@ class Solution:
         G = 30
         P = 20
 
-        pop_size = 20
-        pertProb = 0.4
-        pathLength = 3.0
-        stepLength = 0.22
-        M_max = 10
-
         teacher = "empty"
         newGenPlot = [] 
         currClass = []
@@ -100,13 +94,22 @@ class Solution:
             mean = np.mean([o.pos for o in currClass], axis=0)
             diff = np.random.uniform(0,1)*(teacher.pos - np.random.randint(1,3)*mean)
 
+            for dim in range(self.dims):
+                if teacher.pos[dim]+diff[dim] < self.lB[dim]:
+                    diff[dim] = self.lB[dim]-teacher.pos[dim]
+                if teacher.pos[dim]+diff[dim] > self.uB[dim]:
+                    diff[dim] = self.uB[dim]-teacher.pos[dim]
+
             newFitness = self.fitness(teacher.pos + diff)
-            if(newFitness<teacher.fitness):
-                teacher.pos += diff # check bounds
+            if newFitness < teacher.fitness:
+                teacher.pos += diff
                 teacher.fitness = newFitness
 
             # student phase
             for firstStudent in range(P):
+                if(teacher == currClass[firstStudent]):
+                    continue
+
                 froms = [x for x in range(P) if not (x == firstStudent)]
                 secondStudent = currClass[np.random.choice(froms)]
                 firstStudent = currClass[firstStudent]
@@ -116,17 +119,23 @@ class Solution:
                 else:
                     diff = np.random.uniform(0,1)*(secondStudent.pos - firstStudent.pos)
 
+                for dim in range(self.dims):
+                    if firstStudent.pos[dim]+diff[dim] < self.lB[dim]:
+                        diff[dim] = self.lB[dim]-firstStudent.pos[dim]
+                    if firstStudent.pos[dim]+diff[dim] > self.uB[dim]:
+                        diff[dim] = self.uB[dim]-firstStudent.pos[dim]
+
                 newFitness = self.fitness(firstStudent.pos + diff)
                 if newFitness < firstStudent.fitness:
                     firstStudent.pos += diff
                     firstStudent.fitness = newFitness
-                
+
             # data presentation and new teacher
             newGenPlot = [] 
             teacher = currClass[0]
             for person in currClass:
                 newGenPlot.append(person.pos)
-                if(person.fitness < teacher.fitness):
+                if person.fitness < teacher.fitness:
                     teacher = person
                 
             if not plot.plotHeatMap(newGenPlot, "TLBO, generation: " + str(g+1) + ", best: " + '{:8.4f}'.format(teacher.fitness), leader = currClass.index(teacher)):
@@ -210,7 +219,7 @@ levy = Solution([-10,-10],[10,10], Fitness.levy)
 michalewicz = Solution([0,0],[math.pi,math.pi], Fitness.michalewicz)
 ag_tsp = Solution([0,0],[10,10], Fitness.dummy)
 
-#rovina.sim_annealing() 
+#rovina.tlbo() 
 #ackley.tlbo() # global min 0 [0;0]
 #sphere.tlbo() # global min 0 [0;0]
 #schwefel.tlbo() # global min 0 [420.9;420.9]
